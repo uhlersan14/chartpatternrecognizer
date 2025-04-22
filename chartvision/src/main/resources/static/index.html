@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart Pattern Recognition</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .preview {
+            max-width: 100%;
+            margin: 20px 0;
+        }
+        #result {
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Crypto Chart Pattern Recognition</h1>
+    
+    <div class="upload-area">
+        <input type="file" id="imageInput" accept="image/*">
+        <p>Drop a crypto chart image or click to select</p>
+    </div>
+    
+    <img id="preview" class="preview" style="display: none;">
+    
+    <button onclick="analyzeChart()" id="analyzeBtn" disabled>Analyze Chart</button>
+    
+    <div id="result"></div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const preview = document.getElementById('preview');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const resultDiv = document.getElementById('result');
+
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    analyzeBtn.disabled = false;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        async function analyzeChart() {
+            const file = imageInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                analyzeBtn.disabled = true;
+                resultDiv.innerHTML = 'Analyzing...';
+
+                const response = await fetch('/api/chart/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    resultDiv.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                } else {
+                    // Format results
+                    let output = '<h3>Analysis Results:</h3>';
+                    const patterns = data;
+                    
+                    output += '<ul>';
+                    for (let i = 0; i < patterns.classNames.length; i++) {
+                        output += `<li>${patterns.classNames[i]}: ${(patterns.probabilities[i] * 100).toFixed(2)}%</li>`;
+                    }
+                    output += '</ul>';
+                    
+                    resultDiv.innerHTML = output;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            } finally {
+                analyzeBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
